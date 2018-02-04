@@ -14,6 +14,10 @@ class OperationProxy(object):
         self._proxy = service_proxy
         self._op_name = operation_name
 
+    @property
+    def __doc__(self):
+        return str(self._proxy._binding._operations[self._op_name])
+
     def __call__(self, *args, **kwargs):
         """Call the operation with the given args and kwargs.
 
@@ -66,6 +70,13 @@ class ServiceProxy(object):
         except ValueError:
             raise AttributeError('Service has no operation %r' % key)
         return OperationProxy(self, key)
+
+    def __dir__(self):
+        """ Return the names of the operations. """
+        return list(dir(super(ServiceProxy, self))
+                    + list(self.__dict__)
+                    + list(self._binding.port_type.operations))
+                    # using list() on the dicts for Python 3 compatibility
 
 
 class Factory(object):
@@ -134,6 +145,10 @@ class Client(object):
         self._default_soapheaders = None
 
     @property
+    def namespaces(self):
+        return self.wsdl.types.prefix_map
+
+    @property
     def service(self):
         """The default ServiceProxy instance
 
@@ -167,11 +182,12 @@ class Client(object):
 
 
         """
-        # Store current options
-        old_raw_raw_response = self.raw_response
+        if raw_response is not NotSet:
+            # Store current options
+            old_raw_response = self.raw_response
 
-        # Set new options
-        self.raw_response = raw_response
+            # Set new options
+            self.raw_response = raw_response
 
         if timeout is not NotSet:
             timeout_ctx = self.transport._options(timeout=timeout)
@@ -179,7 +195,8 @@ class Client(object):
 
         yield
 
-        self.raw_response = old_raw_raw_response
+        if raw_response is not NotSet:
+            self.raw_response = old_raw_response
 
         if timeout is not NotSet:
             timeout_ctx.__exit__(None, None, None)

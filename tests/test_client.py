@@ -43,6 +43,20 @@ def test_service_proxy_non_existing():
         assert client_obj.service.NonExisting
 
 
+def test_service_proxy_dir_operations():
+    client_obj = client.Client('tests/wsdl_files/soap.wsdl')
+    operations = [op for op in dir(client_obj.service) if not op.startswith('_')]
+    assert set(operations) == set(['GetLastTradePrice', 'GetLastTradePriceNoOutput']) 
+
+
+def test_operation_proxy_doc():
+    client_obj = client.Client('tests/wsdl_files/soap.wsdl')
+    assert (client_obj.service.GetLastTradePrice.__doc__ 
+            == 'GetLastTradePrice(tickerSymbol: xsd:string, '
+                                 'account: ns0:account, '
+                                 'country: ns0:country) -> price: xsd:float')
+
+
 def test_open_from_file_object():
     with open('tests/wsdl_files/soap_transport_err.wsdl', 'rb') as fh:
         client_obj = client.Client(fh)
@@ -181,6 +195,20 @@ def test_set_context_options_timeout():
             assert obj.transport.operation_timeout == 90
         assert obj.transport.operation_timeout == 120
     assert obj.transport.operation_timeout is None
+
+
+def test_set_context_options_raw_response():
+    obj = client.Client('tests/wsdl_files/soap.wsdl')
+
+    assert obj.raw_response is False
+    with obj.options(raw_response=True):
+        assert obj.raw_response is True
+
+        with obj.options():
+            # Check that raw_response is not changed by default value
+            assert obj.raw_response is True
+    # Check that the original value returned
+    assert obj.raw_response is False
 
 
 @pytest.mark.requests

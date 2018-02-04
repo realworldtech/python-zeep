@@ -7,10 +7,10 @@ from zeep import ns, plugins, wsa
 from zeep.exceptions import Fault, TransportError, XMLSyntaxError
 from zeep.loader import parse_xml
 from zeep.utils import as_qname, get_media_type, qname_attr
-from zeep.wsdl.messages.xop import process_xop
 from zeep.wsdl.attachments import MessagePack
 from zeep.wsdl.definitions import Binding, Operation
 from zeep.wsdl.messages import DocumentMessage, RpcMessage
+from zeep.wsdl.messages.xop import process_xop
 from zeep.wsdl.utils import etree_to_string, url_http_to_https
 
 logger = logging.getLogger(__name__)
@@ -131,15 +131,21 @@ class SoapBinding(Binding):
         :type response: requests.Response
 
         """
-        if response.status_code != 200 and not response.content:
+        if response.status_code in (201, 202) and not response.content:
+            return None
+
+        elif response.status_code != 200 and not response.content:
             raise TransportError(
                 u'Server returned HTTP status %d (no content available)'
-                % response.status_code)
+                % response.status_code,
+                status_code=response.status_code)
 
         content_type = response.headers.get('Content-Type', 'text/xml')
         media_type = get_media_type(content_type)
         message_pack = None
 
+        # If the reply is a multipart/related then we need to retrieve all the
+        # parts
         if media_type == 'multipart/related':
             decoder = MultipartDecoder(
                 response.content, content_type, response.encoding or 'utf-8')
@@ -157,7 +163,9 @@ class SoapBinding(Binding):
         except XMLSyntaxError:
             raise TransportError(
                 'Server returned HTTP status %d (%s)'
-                % (response.status_code, response.content))
+                % (response.status_code, response.content),
+                status_code=response.status_code,
+                content=response.content)
 
         # Check if this is an XOP message which we need to decode first
         if message_pack:
@@ -189,6 +197,9 @@ class SoapBinding(Binding):
 
     def process_service_port(self, xmlelement, force_https=False):
         address_node = xmlelement.find('soap:address', namespaces=self.nsmap)
+        if address_node is None:
+            logger.debug("No valid soap:address found for service")
+            return
 
         # Force the usage of HTTPS when the force_https boolean is true
         location = address_node.get('location')

@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
+import platform
 
 import pytest
-
 from lxml import etree
 from pretend import stub
 
 from tests.utils import load_xml
 from zeep import Client
-from zeep.exceptions import Fault
-from zeep.exceptions import TransportError
+from zeep.exceptions import Fault, TransportError
 from zeep.wsdl import bindings
 
 
@@ -167,6 +166,8 @@ def test_no_content_type():
     assert result == 120.123
 
 
+@pytest.mark.skipif(platform.python_implementation() == 'PyPy',
+                    reason="Fails on PyPy")
 def test_wrong_content():
     data = """
         The request is answered something unexpected,
@@ -183,11 +184,15 @@ def test_wrong_content():
         headers={}
     )
 
-    with pytest.raises(TransportError):
+    with pytest.raises(TransportError) as exc:
         binding.process_reply(
             client, binding.get('GetLastTradePrice'), response)
+    assert 200 == exc.value.status_code
+    assert data == exc.value.content
 
 
+@pytest.mark.skipif(platform.python_implementation() == 'PyPy',
+                    reason="Fails on PyPy")
 def test_wrong_no_unicode_content():
     data = """
         The request is answered something unexpected,
@@ -204,9 +209,36 @@ def test_wrong_no_unicode_content():
         headers={}
     )
 
-    with pytest.raises(TransportError):
+    with pytest.raises(TransportError) as exc:
         binding.process_reply(
             client, binding.get('GetLastTradePrice'), response)
+
+    assert 200 == exc.value.status_code
+    assert data == exc.value.content
+
+
+@pytest.mark.skipif(platform.python_implementation() == 'PyPy',
+                    reason="Fails on PyPy")
+def test_http_error():
+    data = """
+        Unauthorized!
+    """.strip()
+
+    client = Client('tests/wsdl_files/soap.wsdl')
+    binding = client.service._binding
+
+    response = stub(
+        status_code=401,
+        content=data,
+        encoding='utf-8',
+        headers={}
+    )
+
+    with pytest.raises(TransportError) as exc:
+        binding.process_reply(
+            client, binding.get('GetLastTradePrice'), response)
+    assert 401 == exc.value.status_code
+    assert data == exc.value.content
 
 
 def test_mime_multipart():
@@ -357,3 +389,35 @@ def test_unexpected_headers():
     assert result.body.price == 120.123
     assert result.header.body is None
     assert len(result.header._raw_elements) == 1
+
+
+def test_response_201():
+    client = Client('tests/wsdl_files/soap_header.wsdl')
+    binding = client.service._binding
+
+    response = stub(
+        status_code=201,
+        content='',
+        encoding='utf-8',
+        headers={}
+    )
+
+    result = binding.process_reply(
+        client, binding.get('GetLastTradePrice'), response)
+    assert result is None
+
+
+def test_response_202():
+    client = Client('tests/wsdl_files/soap_header.wsdl')
+    binding = client.service._binding
+
+    response = stub(
+        status_code=202,
+        content='',
+        encoding='utf-8',
+        headers={}
+    )
+
+    result = binding.process_reply(
+        client, binding.get('GetLastTradePrice'), response)
+    assert result is None

@@ -19,7 +19,6 @@ class Transport(object):
     :param session: A :py:class:`request.Session()` object (optional)
 
     """
-    supports_async = False
 
     def __init__(self, cache=None, timeout=300, operation_timeout=None,
                  session=None):

@@ -8,7 +8,9 @@ class Error(Exception):
 
 
 class XMLSyntaxError(Error):
-    pass
+    def __init__(self, *args, **kwargs):
+        self.content = kwargs.pop('content', None)
+        super(XMLSyntaxError, self).__init__(*args, **kwargs)
 
 
 class XMLParseError(Error):
@@ -35,7 +37,10 @@ class WsdlSyntaxError(Error):
 
 
 class TransportError(Error):
-    pass
+    def __init__(self, message='', status_code=0, content=None):
+        super(TransportError, self).__init__(message)
+        self.status_code = status_code
+        self.content = content
 
 
 class LookupError(Error):

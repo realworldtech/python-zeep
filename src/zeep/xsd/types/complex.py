@@ -13,7 +13,7 @@ from zeep.xsd.elements.indicators import OrderIndicator
 from zeep.xsd.types.any import AnyType
 from zeep.xsd.types.simple import AnySimpleType
 from zeep.xsd.utils import NamePrefixGenerator
-from zeep.xsd.valueobjects import CompoundValue, ArrayValue
+from zeep.xsd.valueobjects import ArrayValue, CompoundValue
 
 logger = logging.getLogger(__name__)
 
@@ -212,6 +212,10 @@ class ComplexType(AnyType):
         if not self.elements_nested and not self.attributes:
             return
 
+        # TODO: Implement test case for this
+        if value is None:
+            value = {}
+
         if isinstance(value, ArrayValue):
             value = value.as_value_object()
 
@@ -377,6 +381,9 @@ class ComplexType(AnyType):
                 elif isinstance(element, OrderIndicator):
                     for item in reversed(base_element):
                         element.insert(0, item)
+                elif isinstance(element, Group):
+                    for item in reversed(base_element):
+                        element.child.insert(0, item)
 
             elif isinstance(self._element, Group):
                 raise NotImplementedError('TODO')

@@ -255,8 +255,14 @@ class Definition(object):
         for import_node in doc.findall("wsdl:import", namespaces=NSMAP):
             namespace = import_node.get('namespace')
             location = import_node.get('location')
-            location = absolute_location(location, self.location)
 
+            if not location:
+                logger.debug(
+                    "Skipping import for namespace %s (empty location)",
+                    namespace)
+                continue
+
+            location = absolute_location(location, self.location)
             key = (namespace, location)
             if key in self.wsdl._definitions:
                 self.imports[key] = self.wsdl._definitions[key]
@@ -389,7 +395,8 @@ class Definition(object):
 
         """
         result = {}
-        if not getattr(self.wsdl.transport, 'supports_async', False):
+
+        if not getattr(self.wsdl.transport, 'binding_classes', None):
             from zeep.wsdl import bindings
             binding_classes = [
                 bindings.Soap11Binding,
@@ -398,11 +405,7 @@ class Definition(object):
                 bindings.HttpPostBinding,
             ]
         else:
-            from zeep.asyncio import bindings  # Python 3.5+ syntax
-            binding_classes = [
-                bindings.AsyncSoap11Binding,
-                bindings.AsyncSoap12Binding,
-            ]
+            binding_classes = self.wsdl.transport.binding_classes
 
         for binding_node in doc.findall('wsdl:binding', namespaces=NSMAP):
             # Detect the binding type

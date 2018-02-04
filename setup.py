@@ -19,6 +19,10 @@ docs_require = [
     'sphinx>=1.4.0',
 ]
 
+tornado_require = [
+    'tornado>=4.0.2'
+]
+
 async_require = []  # see below
 
 xmlsec_require = [
@@ -29,15 +33,17 @@ tests_require = [
     'freezegun==0.3.8',
     'mock==2.0.0',
     'pretend==1.0.8',
-    'pytest-cov==2.4.0',
-    'pytest==3.0.6',
+    'pytest-cov==2.5.1',
+    'pytest==3.1.3',
     'requests_mock>=0.7.0',
+    'pytest-tornado==0.4.5',
 
     # Linting
-    'isort==4.2.5',
-    'flake8==3.2.1',
+    'isort==4.2.15',
+    'flake8==3.3.0',
     'flake8-blind-except==0.1.1',
     'flake8-debugger==1.4.0',
+    'flake8-imports==0.1.1',
 ]
 
 
@@ -52,7 +58,7 @@ with open('README.rst') as fh:
 
 setup(
     name='zeep',
-    version='2.2.0',
+    version='2.5.0',
     description='A modern/fast Python SOAP client based on lxml / requests',
     long_description=long_description,
     author="Michael van Tellingen",
@@ -65,13 +71,13 @@ setup(
         'docs': docs_require,
         'test': tests_require,
         'async': async_require,
+        'tornado': tornado_require,
         'xmlsec': xmlsec_require,
     },
     entry_points={},
     package_dir={'': 'src'},
-    packages=find_packages('src'),
+    packages=['zeep'],
     include_package_data=True,
-
     license='MIT',
     classifiers=[
         'Development Status :: 5 - Production/Stable',

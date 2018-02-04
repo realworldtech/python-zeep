@@ -109,7 +109,12 @@ class Duration(BuiltinType, AnySimpleType):
         return isodate.duration_isoformat(value)
 
     def pythonvalue(self, value):
-        return isodate.parse_duration(value)
+        if value.startswith('PT-'):
+            value = value.replace('PT-', 'PT')
+            result = isodate.parse_duration(value)
+            return datetime.timedelta(0 - result.total_seconds())
+        else:
+            return isodate.parse_duration(value)
 
 
 class DateTime(BuiltinType, AnySimpleType):
@@ -142,6 +147,9 @@ class Time(BuiltinType, AnySimpleType):
 
     @check_no_collection
     def xmlvalue(self, value):
+        if isinstance(value, six.string_types):
+            return value
+
         if value.microsecond:
             return isodate.isostrf.strftime(value, '%H:%M:%S.%f%Z')
         return isodate.isostrf.strftime(value, '%H:%M:%S%Z')

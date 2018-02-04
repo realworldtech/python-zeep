@@ -9,7 +9,7 @@ from zeep.loader import absolute_location, load_external
 from zeep.utils import as_qname, qname_attr
 from zeep.xsd import elements as xsd_elements
 from zeep.xsd import types as xsd_types
-from zeep.xsd.const import xsd_ns, AUTO_IMPORT_NAMESPACES
+from zeep.xsd.const import AUTO_IMPORT_NAMESPACES, xsd_ns
 from zeep.xsd.types.unresolved import UnresolvedCustomType, UnresolvedType
 
 logger = logging.getLogger(__name__)
@@ -170,7 +170,7 @@ class SchemaVisitor(object):
 
         # Check if the schema is already imported before based on the
         # namespace. Schema's without namespace are registered as 'None'
-        document = self.schema._get_schema_document(namespace, location)
+        document = self.schema.documents.get_by_namespace_and_location(namespace, location)
         if document:
             logger.debug("Returning existing schema: %r", location)
             self.register_import(namespace, document)

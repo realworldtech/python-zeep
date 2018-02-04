@@ -1,10 +1,10 @@
-import pytest
-from pretend import stub
-from lxml import etree
 import aiohttp
+import pytest
 from aioresponses import aioresponses
+from lxml import etree
+from pretend import stub
 
-from zeep import cache, asyncio
+from zeep import asyncio, exceptions
 
 
 @pytest.mark.requests
@@ -58,3 +58,19 @@ async def test_session_no_close(event_loop):
     transport = asyncio.AsyncTransport(loop=event_loop, session=session)
     del transport
     assert not session.closed
+
+
+@pytest.mark.requests
+def test_http_error(event_loop):
+    transport = asyncio.AsyncTransport(loop=event_loop)
+
+    with aioresponses() as m:
+        m.get(
+            'http://tests.python-zeep.org/test.xml',
+            body='x',
+            status=500,
+        )
+        with pytest.raises(exceptions.TransportError) as exc:
+            transport.load('http://tests.python-zeep.org/test.xml')
+            assert exc.value.status_code == 500
+            assert exc.value.message is None
